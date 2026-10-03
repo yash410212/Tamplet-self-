@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fontstore Admin — Yash</title>
+<style>
+:root{--bg:#f5efe2;--card:rgba(255,255,255,.72);--ink:#24352b;--muted:#68756d;--sage:#789b7d;--blue:#8bb8c9;--gold:#d7aa59;--line:rgba(36,53,43,.12);--shadow:0 18px 45px rgba(55,70,56,.12)}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 0%,#dcebd8 0,transparent 32%),radial-gradient(circle at 100% 20%,#d9edf2 0,transparent 30%),var(--bg);min-height:100vh}
+header{padding:22px 5%;display:flex;justify-content:space-between;align-items:center}.brand{font-size:24px;font-weight:800}.brand span{color:var(--sage)}
+button{border:0;border-radius:14px;padding:11px 16px;font-weight:700;cursor:pointer;background:var(--ink);color:white}button.alt{background:#fff;color:var(--ink);border:1px solid var(--line)}
+main{max-width:1180px;margin:auto;padding:10px 5% 50px}.hero{display:flex;justify-content:space-between;gap:20px;align-items:end;margin:20px 0 25px}.hero h1{font-size:clamp(30px,5vw,52px);margin:0 0 8px}.hero p{margin:0;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:20px}.stat,.panel,.product{background:var(--card);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.8);box-shadow:var(--shadow);border-radius:24px}.stat{padding:20px}.stat b{display:block;font-size:30px}.stat small{color:var(--muted)}
+.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:20px}.panel{padding:22px}.panel h2{margin-top:0}label{display:block;font-size:13px;font-weight:800;margin:14px 0 7px}input,textarea{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:14px;background:#ffffffb8;font:inherit}textarea{min-height:90px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.preview{border:1px dashed rgba(36,53,43,.25);border-radius:18px;min-height:150px;display:grid;place-items:center;overflow:hidden;background:#ffffff70;margin-top:10px}.preview img{width:100%;max-height:260px;object-fit:cover}.products{display:grid;gap:14px}.product{padding:12px;display:grid;grid-template-columns:110px 1fr auto;gap:14px;align-items:center}.product img{width:110px;height:78px;object-fit:cover;border-radius:14px;background:#e6e0d3}.product h3{margin:0 0 5px;font-size:17px}.product p{margin:0;color:var(--muted);font-size:13px}.actions{display:flex;gap:7px;flex-wrap:wrap}.empty{text-align:center;color:var(--muted);padding:30px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.hero{align-items:start;flex-direction:column}.product{grid-template-columns:82px 1fr}.product img{width:82px;height:65px}.product .actions{grid-column:1/-1}.row{grid-template-columns:1fr}}
+@media(max-width:480px){.stats{grid-template-columns:1fr}.panel{padding:16px}}
+</style>
+</head>
+<body>
+<header><div class="brand">Ghibli <span>Fontstore</span></div><button class="alt" onclick="clearAll()">Clear catalog</button></header>
+<main>
+<section class="hero"><div><h1>Store Admin</h1><p>Upload a product screenshot, add its Fontstore URL, and publish it to your catalog.</p></div></section>
+<section class="stats">
+<div class="stat"><small>Products</small><b id="count">0</b></div>
+<div class="stat"><small>Catalog views</small><b id="views">0</b></div>
+<div class="stat"><small>Storage</small><b>Local</b></div>
+</section>
+<div class="grid">
+<section class="panel">
+<h2>Add product</h2>
+<form id="form">
+<label>Product name</label><input id="name" required placeholder="e.g. Soft Pastel Canva Template">
+<div class="row"><div><label>Category</label><input id="category" placeholder="Templates"></div><div><label>Price</label><input id="price" placeholder="₹99"></div></div>
+<label>Fontstore product URL</label><input id="url" type="url" required placeholder="https://...">
+<label>Screenshot</label><input id="image" type="file" accept="image/*">
+<div class="preview" id="preview">Screenshot preview</div>
+<label>Short description</label><textarea id="desc" placeholder="A short, useful description..."></textarea>
+<br><button type="submit">Publish product</button>
+</form>
+</section>
+<section class="panel">
+<h2>Catalog</h2><div id="products" class="products"></div>
+</section>
+</div>
+</main>
+<script>
+const KEY="fontstore_catalog_v1", VKEY="fontstore_views_v1";
+let data=JSON.parse(localStorage.getItem(KEY)||"[]"), views=Number(localStorage.getItem(VKEY)||0);
+const $=id=>document.getElementById(id);
+function render(){ $("count").textContent=data.length; $("views").textContent=views.toLocaleString(); $("products").innerHTML=data.length?data.map((p,i)=>`
+<article class="product"><img src="${p.image||''}" onerror="this.style.visibility='hidden'"><div><h3>${esc(p.name)}</h3><p>${esc(p.category||'Product')} · ${esc(p.price||'Price not set')}</p><p>${esc(p.desc||'')}</p></div><div class="actions"><button onclick="openBuy(${i})">Open</button><button class="alt" onclick="removeProduct(${i})">Delete</button></div></article>`).join(""):'<div class="empty">No products yet.<br>Add your first product above.</div>'; }
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function save(){localStorage.setItem(KEY,JSON.stringify(data));localStorage.setItem(VKEY,views);render()}
+function openBuy(i){views++;save();window.open(data[i].url,'_blank','noopener')}
+function removeProduct(i){if(confirm("Delete this product?")){data.splice(i,1);save()}}
+function clearAll(){if(confirm("Clear the whole local catalog?")){data=[];save()}}
+$("image").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$("preview").innerHTML=`<img src="${r.result}">`; $("preview").dataset.img=r.result};r.readAsDataURL(f)}
+$("form").onsubmit=e=>{e.preventDefault();data.unshift({name:$("name").value,category:$("category").value,price:$("price").value,url:$("url").value,desc:$("desc").value,image:$("preview").dataset.img||""});save();e.target.reset();$("preview").textContent="Screenshot preview";delete $("preview").dataset.img}
+render();
+</script>
+</body>
+</html>
